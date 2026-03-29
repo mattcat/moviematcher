@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MovieMatcher — Film Detail</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+  .movie-page { padding-top: 100px; }
+
+  /* Star rating display */
+  .star-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .stars {
+    display: flex;
+    gap: 3px;
+  }
+  .star {
+    font-size: 14px;
+    color: rgba(255,255,255,0.15);
+  }
+  .star.lit { color: #ffd700; }
+  .imdb-score {
+    font-family: 'Orbitron', monospace;
+    font-size: 13px;
+    color: #ffd700;
+    letter-spacing: 1px;
+  }
+
+  /* Animated entry */
+  .movie-page-inner { animation: enterPage 0.5s ease both; }
+  @keyframes enterPage {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Poster glow */
+  .poster-wrap { position: relative; }
+  .poster-wrap::after {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: 3px;
+    background: linear-gradient(135deg, var(--neon-blue), transparent 60%);
+    opacity: 0;
+    transition: opacity 0.4s;
+    pointer-events: none;
+    z-index: -1;
+  }
+  .poster-wrap:hover::after { opacity: 0.4; }
+
+  .poster-wrap.female-poster::after {
+    background: linear-gradient(135deg, var(--neon-pink), transparent 60%);
+  }
+
+  /* Breadcrumb */
+  .breadcrumb {
+    font-family: 'Orbitron', monospace;
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: rgba(255,255,255,0.25);
+    text-transform: uppercase;
+    margin-bottom: 36px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .breadcrumb a {
+    color: rgba(255,255,255,0.4);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  .breadcrumb a:hover { color: var(--neon-blue); }
+  .breadcrumb span { opacity: 0.3; }
+
+  /* Related grid cards */
+  .related-card {
+    background: rgba(6,6,6,0.9);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 2px;
+    overflow: hidden;
+    cursor: pointer;
+    text-decoration: none;
+    color: inherit;
+    display: block;
+    transition: all 0.25s;
+  }
+  .related-card:hover {
+    border-color: rgba(0,212,255,0.35);
+    transform: translateY(-3px);
+  }
+  .related-card.female-related:hover { border-color: rgba(255,0,110,0.35); }
+  .related-poster {
+    width: 100%;
+    aspect-ratio: 2/3;
+    object-fit: cover;
+    display: block;
+    background: #0d0d0d;
+  }
+  .related-ph {
+    width: 100%;
+    aspect-ratio: 2/3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 8px;
+    background: #0d0d0d;
+    font-size: 24px;
+    opacity: 0.2;
+  }
+  .related-body {
+    padding: 10px 12px;
+  }
+  .related-title {
+    font-family: 'Bebas Neue', cursive;
+    font-size: 15px;
+    letter-spacing: 1px;
+    line-height: 1.1;
+    color: #fff;
+  }
+  .related-year {
+    font-family: 'Orbitron', monospace;
+    font-size: 9px;
+    color: rgba(255,255,255,0.25);
+    letter-spacing: 2px;
+    margin-top: 3px;
+  }
+
+  /* Not found */
+  .not-found {
+    text-align: center;
+    padding: 100px 20px;
+    font-family: 'Orbitron', monospace;
+    font-size: 13px;
+    letter-spacing: 4px;
+    color: rgba(255,255,255,0.2);
+  }
+
+  /* Tagline decoration */
+  .page-number {
+    font-family: 'Orbitron', monospace;
+    font-size: 9px;
+    letter-spacing: 4px;
+    color: rgba(255,255,255,0.12);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+</style>
+</head>
+<body>
+
+<canvas id="led-canvas"></canvas>
+
+<nav class="navbar">
+  <a href="index.html" class="nav-back">← Back to Browse</a>
+  <a href="index.html" class="nav-logo">MovieMatcher</a>
+  <div style="width:120px"></div>
+</nav>
+
+<div class="page-wrap">
+  <div class="movie-page" id="movie-page">
+    <!-- Filled by JS -->
+  </div>
+</div>
+
+<script src="data.js"></script>
+<script src="shared.js"></script>
+<script>
+
+// Poster gradient system - works fully offline, no external images needed
+const POSTER_GRADIENTS = [
+  ['#0f0c29','#302b63','#24243e'],['#1a1a2e','#16213e','#0f3460'],
+  ['#0d0d0d','#1a0533','#2d1b69'],['#000000','#130f40','#d31027'],
+  ['#0f2027','#203a43','#2c5364'],['#1f1c2c','#928dab','#1f1c2c'],
+  ['#0a0a0a','#1a1a2e','#e94560'],['#0d0d0d','#232526','#414345'],
+  ['#16222a','#3a6073','#16222a'],['#200122','#6f0000','#200122'],
+  ['#000428','#004e92','#000428'],['#1a1a1a','#2d1515','#8B0000'],
+];
+function hashStr(s){let h=0;for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))>>>0;return h;}
+function makePoster(movie, gender, size){
+  const g = POSTER_GRADIENTS[hashStr(movie.id) % POSTER_GRADIENTS.length];
+  const accent = gender==='female' ? '#ff006e' : '#00d4ff';
+  const short = movie.title.length > 20 ? movie.title.substring(0,18)+'…' : movie.title;
+  const yr = movie.year;
+  const h = size==='card' ? '100%' : '450px';
+  const fs = size==='card' ? '22px' : '36px';
+  const fs2 = size==='card' ? '11px' : '14px';
+  // Try loading real image first, fall back to gradient
+  const imgId = 'img_'+movie.id;
+  return `<div class="poster-art" style="width:100%;aspect-ratio:${size==='card'?'2/3':'unset'};height:${size==='page'?h:'unset'};position:relative;overflow:hidden;background:linear-gradient(160deg,${g[0]},${g[1]} 50%,${g[2]});display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:16px;border-radius:2px;" id="${imgId}_wrap">
+    <img id="${imgId}" src="${movie.img}" alt="${movie.title}" 
+      style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity 0.4s;"
+      onload="this.style.opacity=1;document.getElementById('${imgId}_overlay').style.display='none';"
+      onerror="this.style.display='none';" />
+    <div id="${imgId}_overlay" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:20px;text-align:center;pointer-events:none;">
+      <div style="width:48px;height:2px;background:${accent};box-shadow:0 0 12px ${accent};margin-bottom:4px;"></div>
+      <div style="font-family:'Bebas Neue',cursive;font-size:${fs};letter-spacing:2px;color:#fff;line-height:1.2;text-shadow:0 2px 8px rgba(0,0,0,0.8);">${short}</div>
+      <div style="font-family:'Orbitron',monospace;font-size:${fs2};color:${accent};letter-spacing:3px;">${yr}</div>
+      <div style="width:32px;height:1px;background:rgba(255,255,255,0.2);"></div>
+      <div style="font-family:'Orbitron',monospace;font-size:9px;color:rgba(255,255,255,0.25);letter-spacing:2px;">★ ${movie.imdb}</div>
+    </div>
+  </div>`;
+}
+
+</script>
+<script>
+  // Parse query params
+  const params = new URLSearchParams(window.location.search);
+  const movieId = params.get('id');
+
+  // Find movie in DB
+  let foundMovie = null;
+  let foundGroup = null;
+  let foundGender = null;
+
+  if (movieId) {
+    for (const groupKey of Object.keys(MOVIE_DB)) {
+      for (const gender of ['male','female']) {
+        const match = MOVIE_DB[groupKey][gender].find(m => m.id === movieId);
+        if (match) {
+          foundMovie = match;
+          foundGroup = groupKey;
+          foundGender = gender;
+          break;
+        }
+      }
+      if (foundMovie) break;
+    }
+  }
+
+  const page = document.getElementById('movie-page');
+
+  if (!foundMovie) {
+    page.innerHTML = `
+      <div class="not-found">
+        <div style="font-size:56px;margin-bottom:24px">🎬</div>
+        <div>Film not found</div>
+        <a href="index.html" style="display:inline-block;margin-top:20px;color:var(--neon-blue);font-size:11px;letter-spacing:3px">← Back to MovieMatcher</a>
+      </div>`;
+  } else {
+    // Update page title
+    document.title = `${foundMovie.title} — MovieMatcher`;
+
+    const isMale = foundGender === 'male';
+    const accentClass = isMale ? 'accent-blue' : 'accent-pink';
+    const hookClass = isMale ? '' : 'female-hook';
+    const btnClass = isMale ? '' : 'female-btn';
+    const posterClass = isMale ? '' : 'female-poster';
+    const groupLabel = MOVIE_DB[foundGroup].label;
+
+    // IMDb stars (out of 5)
+    const score = parseFloat(foundMovie.imdb);
+    const filled = Math.round(score / 2);
+    let starsHTML = '';
+    for (let i = 1; i <= 5; i++) {
+      starsHTML += `<span class="star${i <= filled ? ' lit' : ''}">★</span>`;
+    }
+
+    // Related movies (same group, same gender, excluding current)
+    const related = MOVIE_DB[foundGroup][foundGender]
+      .filter(m => m.id !== foundMovie.id)
+      .slice(0, 5);
+
+    const relatedHTML = related.map(m => `
+      <a href="movie.html?id=${m.id}" class="related-card ${isMale ? '' : 'female-related'}">
+        ${makePoster(m, foundGender, 'card').replace(/aspect-ratio:unset/g,'').replace(/height:unset/g,'')}
+        <div class="related-body">
+          <div class="related-title">${m.title}</div>
+          <div class="related-year">${m.year}</div>
+        </div>
+      </a>
+    `).join('');
+
+    page.innerHTML = `
+      <div class="movie-page" style="padding-top:0">
+        <div style="max-width:980px;margin:0 auto;padding:0 24px 48px">
+          <div class="breadcrumb">
+            <a href="index.html">MovieMatcher</a>
+            <span>/</span>
+            <span>${groupLabel}</span>
+            <span>/</span>
+            <span>${foundGender === 'male' ? 'Male' : 'Female'}</span>
+            <span>/</span>
+            <span style="color:rgba(255,255,255,0.55)">${foundMovie.title}</span>
+          </div>
+        </div>
+
+        <div style="max-width:980px;margin:0 auto;padding:0 24px 60px">
+          <div class="movie-page-inner">
+            <div class="movie-page-inner" style="display:grid;grid-template-columns:300px 1fr;gap:48px;align-items:start">
+
+              <!-- POSTER -->
+              <div class="poster-wrap ${posterClass}">
+                ${makePoster(foundMovie, foundGender, 'page')}
+              </div>
+
+              <!-- DETAILS -->
+              <div class="movie-page-right">
+                <div>
+                  <div class="page-number">${isMale ? '♂' : '♀'} ${groupLabel}</div>
+                  <h1 class="movie-page-title">${foundMovie.title}</h1>
+                </div>
+
+                <div class="star-row">
+                  <div class="stars">${starsHTML}</div>
+                  <span class="imdb-score">${foundMovie.imdb}/10 IMDB</span>
+                </div>
+
+                <div class="movie-page-meta">
+                  <span class="meta-tag ${accentClass}">${foundMovie.year}</span>
+                  <span class="meta-tag">${foundMovie.rating}</span>
+                  <span class="meta-tag">${foundMovie.runtime}</span>
+                  <span class="meta-tag accent-green">${foundMovie.genre}</span>
+                </div>
+
+                <div class="movie-page-details">
+                  <div class="detail-item">
+                    <span class="detail-label">Director</span>
+                    <span class="detail-value">${foundMovie.director}</span>
+                  </div>
+                  <div class="detail-item">
+                    <span class="detail-label">Cast</span>
+                    <span class="detail-value">${foundMovie.cast}</span>
+                  </div>
+                </div>
+
+                <p class="movie-page-desc">${foundMovie.desc}</p>
+
+                <div class="movie-page-hook ${hookClass}">
+                  <div class="hook-label">Why You Must Watch This</div>
+                  <div class="hook-text">${foundMovie.hook}</div>
+                </div>
+
+                <a href="${foundMovie.link || `https://www.imdb.com/find?q=${encodeURIComponent(foundMovie.title)}`}" 
+                   target="_blank" rel="noopener noreferrer"
+                   class="imdb-btn ${btnClass}">
+                  View on IMDB &nbsp;↗
+                </a>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- RELATED -->
+        ${related.length > 0 ? `
+        <div class="related-section">
+          <div class="glow-divider" style="margin-left:0;max-width:200px;margin-bottom:24px"></div>
+          <div class="related-title">More Films for ${groupLabel} / ${foundGender === 'male' ? 'Male' : 'Female'}</div>
+          <div class="related-grid">${relatedHTML}</div>
+        </div>` : ''}
+      </div>
+    `;
+
+
+
+    // Fix layout for mobile
+    const inner = page.querySelector('[style*="grid-template-columns:300px"]');
+    if (inner && window.innerWidth < 700) {
+      inner.style.gridTemplateColumns = '1fr';
+    }
+    window.addEventListener('resize', () => {
+      if (inner) {
+        inner.style.gridTemplateColumns = window.innerWidth < 700 ? '1fr' : '300px 1fr';
+      }
+    });
+  }
+</script>
+</body>
+</html>

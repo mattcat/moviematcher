@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MovieMatcher — Your Next Favorite Film</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+  .navbar { justify-content: center; }
+  .nav-logo { font-size: 22px; letter-spacing: 3px; }
+
+  .site-hero { padding: 90px 20px 54px; }
+
+  .prompt-text {
+    font-family: 'Orbitron', monospace;
+    font-size: 12px;
+    letter-spacing: 5px;
+    color: rgba(255,255,255,0.22);
+    text-transform: uppercase;
+    text-align: center;
+    margin-bottom: 48px;
+    animation: fadeSlide 1s ease 0.5s both;
+  }
+  @keyframes fadeSlide {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .empty-cine {
+    grid-column: 1/-1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 80px 20px;
+    gap: 20px;
+  }
+  .cine-icon { font-size: 64px; opacity: 0.15; }
+  .cine-msg {
+    font-family: 'Orbitron', monospace;
+    font-size: 11px;
+    letter-spacing: 5px;
+    color: rgba(255,255,255,0.18);
+    text-transform: uppercase;
+    text-align: center;
+    line-height: 2;
+  }
+
+  /* Genre pills at top of results */
+  .section-divider {
+    max-width: 1200px;
+    margin: 0 auto 20px;
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .divider-line-h {
+    flex: 1;
+    height: 1px;
+    background: rgba(255,255,255,0.06);
+  }
+  .divider-tag {
+    font-family: 'Orbitron', monospace;
+    font-size: 9px;
+    letter-spacing: 3px;
+    color: rgba(255,255,255,0.18);
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+</style>
+</head>
+<body>
+
+<canvas id="led-canvas"></canvas>
+
+<nav class="navbar">
+  <a href="index.html" class="nav-logo">MovieMatcher</a>
+</nav>
+
+<div class="page-wrap">
+
+  <header class="site-hero">
+    <h1 class="site-logo">MovieMatcher</h1>
+    <p class="site-slogan">Your Next Favorite Film</p>
+    <div class="glow-divider"></div>
+    <p class="prompt-text">Select your age group and gender below to discover your perfect films</p>
+  </header>
+
+  <!-- FILTER PANEL -->
+  <div class="filter-panel" id="filter-panel">
+    <div class="filter-section-label">Age Group</div>
+    <div class="age-chips" id="age-chips"></div>
+    <div class="hr-dim"></div>
+    <div class="filter-section-label">Gender</div>
+    <div class="gender-chips" id="gender-chips">
+      <button class="chip" data-gender="male" onclick="selectGender('male', this)">♂&nbsp;&nbsp;Male</button>
+      <button class="chip" data-gender="female" onclick="selectGender('female', this)">♀&nbsp;&nbsp;Female</button>
+    </div>
+  </div>
+
+  <!-- RESULTS BAR -->
+  <div class="results-bar" id="results-bar" style="display:none">
+    Showing <em id="results-count">0</em> films for <em id="results-label"></em>
+  </div>
+
+  <!-- SECTION DIVIDER -->
+  <div class="section-divider" id="section-divider" style="display:none">
+    <div class="divider-line-h"></div>
+    <span class="divider-tag">Top 10 Picks</span>
+    <div class="divider-line-h"></div>
+  </div>
+
+  <!-- MOVIE GRID -->
+  <div class="movie-grid" id="movie-grid">
+    <div class="empty-cine">
+      <div class="cine-icon">🎬</div>
+      <div class="cine-msg">Choose your age group &amp; gender<br>to discover 10 handpicked films</div>
+    </div>
+  </div>
+
+</div>
+
+<script src="data.js"></script>
+<script src="shared.js"></script>
+<script>
+
+// Poster gradient system - works fully offline, no external images needed
+const POSTER_GRADIENTS = [
+  ['#0f0c29','#302b63','#24243e'],['#1a1a2e','#16213e','#0f3460'],
+  ['#0d0d0d','#1a0533','#2d1b69'],['#000000','#130f40','#d31027'],
+  ['#0f2027','#203a43','#2c5364'],['#1f1c2c','#928dab','#1f1c2c'],
+  ['#0a0a0a','#1a1a2e','#e94560'],['#0d0d0d','#232526','#414345'],
+  ['#16222a','#3a6073','#16222a'],['#200122','#6f0000','#200122'],
+  ['#000428','#004e92','#000428'],['#1a1a1a','#2d1515','#8B0000'],
+];
+function hashStr(s){let h=0;for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))>>>0;return h;}
+function makePoster(movie, gender, size){
+  const g = POSTER_GRADIENTS[hashStr(movie.id) % POSTER_GRADIENTS.length];
+  const accent = gender==='female' ? '#ff006e' : '#00d4ff';
+  const short = movie.title.length > 20 ? movie.title.substring(0,18)+'…' : movie.title;
+  const yr = movie.year;
+  const h = size==='card' ? '100%' : '450px';
+  const fs = size==='card' ? '22px' : '36px';
+  const fs2 = size==='card' ? '11px' : '14px';
+  // Try loading real image first, fall back to gradient
+  const imgId = 'img_'+movie.id;
+  return `<div class="poster-art" style="width:100%;aspect-ratio:${size==='card'?'2/3':'unset'};height:${size==='page'?h:'unset'};position:relative;overflow:hidden;background:linear-gradient(160deg,${g[0]},${g[1]} 50%,${g[2]});display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:16px;border-radius:2px;" id="${imgId}_wrap">
+    <img id="${imgId}" src="${movie.img}" alt="${movie.title}" 
+      style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity 0.4s;"
+      onload="this.style.opacity=1;document.getElementById('${imgId}_overlay').style.display='none';"
+      onerror="this.style.display='none';" />
+    <div id="${imgId}_overlay" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:20px;text-align:center;pointer-events:none;">
+      <div style="width:48px;height:2px;background:${accent};box-shadow:0 0 12px ${accent};margin-bottom:4px;"></div>
+      <div style="font-family:'Bebas Neue',cursive;font-size:${fs};letter-spacing:2px;color:#fff;line-height:1.2;text-shadow:0 2px 8px rgba(0,0,0,0.8);">${short}</div>
+      <div style="font-family:'Orbitron',monospace;font-size:${fs2};color:${accent};letter-spacing:3px;">${yr}</div>
+      <div style="width:32px;height:1px;background:rgba(255,255,255,0.2);"></div>
+      <div style="font-family:'Orbitron',monospace;font-size:9px;color:rgba(255,255,255,0.25);letter-spacing:2px;">★ ${movie.imdb}</div>
+    </div>
+  </div>`;
+}
+
+</script>
+<script>
+  let currentAge = null;
+  let currentGender = null;
+
+  // Build age chips
+  const ageChipsEl = document.getElementById('age-chips');
+  Object.keys(MOVIE_DB).forEach(key => {
+    const btn = document.createElement('button');
+    btn.className = 'chip';
+    btn.dataset.age = key;
+    btn.textContent = MOVIE_DB[key].label;
+    btn.onclick = () => selectAge(key, btn);
+    ageChipsEl.appendChild(btn);
+  });
+
+  function selectAge(key, btn) {
+    document.querySelectorAll('[data-age]').forEach(b => b.classList.remove('active-age'));
+    btn.classList.add('active-age');
+    currentAge = key;
+    renderMovies();
+  }
+
+  function selectGender(gender, btn) {
+    document.querySelectorAll('[data-gender]').forEach(b => b.classList.remove('active-male','active-female'));
+    btn.classList.add(gender === 'male' ? 'active-male' : 'active-female');
+    currentGender = gender;
+    renderMovies();
+  }
+
+  function renderMovies() {
+    const grid = document.getElementById('movie-grid');
+    const resultsBar = document.getElementById('results-bar');
+    const sectionDiv = document.getElementById('section-divider');
+
+    if (!currentAge || !currentGender) {
+      grid.innerHTML = `<div class="empty-cine"><div class="cine-icon">🎬</div><div class="cine-msg">Choose your age group &amp; gender<br>to discover 10 handpicked films</div></div>`;
+      resultsBar.style.display = 'none';
+      sectionDiv.style.display = 'none';
+      return;
+    }
+
+    const movies = MOVIE_DB[currentAge][currentGender];
+    const groupLabel = MOVIE_DB[currentAge].label;
+
+    document.getElementById('results-count').textContent = movies.length;
+    document.getElementById('results-label').textContent = `${groupLabel} / ${currentGender.charAt(0).toUpperCase() + currentGender.slice(1)}`;
+    resultsBar.style.display = 'block';
+    sectionDiv.style.display = 'flex';
+
+    grid.innerHTML = '';
+    movies.forEach((m, i) => {
+      const card = document.createElement('a');
+      card.className = `movie-card ${currentGender === 'male' ? 'male-card' : 'female-card'}`;
+      card.href = `movie.html?id=${m.id}`;
+      card.style.animationDelay = `${i * 0.06}s`;
+
+      card.innerHTML = makePoster(m, currentGender, 'card') + `
+        <div class="card-body">
+          <div class="card-title">${m.title}</div>
+          <div class="card-meta">${m.year} &nbsp;·&nbsp; ${m.runtime}</div>
+          <div class="card-genre">${m.genre}</div>
+          <span class="card-badge">★ ${m.imdb} IMDB</span>
+        </div>`;
+      grid.appendChild(card);
+    });
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,496 @@
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@300;400;600;700&family=Orbitron:wght@400;700;900&display=swap');
+
+:root {
+  --neon-red: #ff0033;
+  --neon-blue: #00d4ff;
+  --neon-green: #39ff14;
+  --neon-purple: #bf00ff;
+  --neon-pink: #ff006e;
+  --neon-orange: #ff6600;
+  --neon-yellow: #ffff00;
+}
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: #000;
+  color: #fff;
+  font-family: 'Rajdhani', sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+  position: relative;
+}
+
+#led-canvas {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* ── NAVBAR ── */
+.navbar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 32px;
+  height: 64px;
+  background: rgba(0,0,0,0.85);
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  backdrop-filter: blur(12px);
+}
+
+.nav-logo {
+  font-family: 'Bebas Neue', cursive;
+  font-size: 28px;
+  letter-spacing: 4px;
+  background: linear-gradient(90deg, var(--neon-red), var(--neon-blue), var(--neon-green));
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: logoShift 4s linear infinite;
+  text-decoration: none;
+}
+@keyframes logoShift { to { background-position: 200% center; } }
+
+.nav-back {
+  font-family: 'Orbitron', monospace;
+  font-size: 11px;
+  letter-spacing: 3px;
+  color: rgba(255,255,255,0.45);
+  text-decoration: none;
+  text-transform: uppercase;
+  transition: color 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.nav-back:hover { color: var(--neon-blue); }
+
+/* ── CONTENT WRAPPER ── */
+.page-wrap {
+  position: relative;
+  z-index: 10;
+  padding-top: 64px;
+}
+
+/* ── HERO ── */
+.site-hero {
+  text-align: center;
+  padding: 80px 20px 50px;
+}
+
+.site-logo {
+  font-family: 'Bebas Neue', cursive;
+  font-size: clamp(70px, 14vw, 150px);
+  letter-spacing: 10px;
+  line-height: 1;
+  background: linear-gradient(135deg, var(--neon-red) 0%, var(--neon-blue) 40%, var(--neon-green) 70%, var(--neon-purple) 100%);
+  background-size: 300% 300%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: heroGrad 5s ease infinite;
+  filter: drop-shadow(0 0 30px rgba(0,212,255,0.3));
+}
+@keyframes heroGrad {
+  0%,100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+.site-slogan {
+  font-family: 'Orbitron', monospace;
+  font-size: clamp(11px, 2vw, 16px);
+  letter-spacing: 8px;
+  color: rgba(255,255,255,0.35);
+  text-transform: uppercase;
+  margin-top: 12px;
+  animation: sloganPulse 3s ease-in-out infinite;
+}
+@keyframes sloganPulse {
+  0%,100% { opacity: 0.35; }
+  50% { opacity: 0.8; letter-spacing: 10px; }
+}
+
+.glow-divider {
+  width: 320px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--neon-blue) 50%, transparent);
+  margin: 36px auto;
+  opacity: 0.6;
+}
+
+/* ── FILTER PANEL ── */
+.filter-panel {
+  max-width: 860px;
+  margin: 0 auto 48px;
+  padding: 32px 28px;
+  background: rgba(0,0,0,0.75);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 2px;
+  backdrop-filter: blur(8px);
+}
+
+.filter-section-label {
+  font-family: 'Orbitron', monospace;
+  font-size: 10px;
+  letter-spacing: 5px;
+  color: rgba(255,255,255,0.28);
+  text-transform: uppercase;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.age-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+.gender-chips {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.hr-dim {
+  height: 1px;
+  background: rgba(255,255,255,0.06);
+  margin: 20px 0;
+}
+
+.chip {
+  font-family: 'Orbitron', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  padding: 9px 18px;
+  border: 1px solid rgba(255,255,255,0.18);
+  border-radius: 2px;
+  background: transparent;
+  color: rgba(255,255,255,0.4);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+}
+.chip:hover {
+  border-color: var(--neon-blue);
+  color: var(--neon-blue);
+  box-shadow: 0 0 14px rgba(0,212,255,0.25);
+}
+.chip.active-age {
+  border-color: var(--neon-blue);
+  color: var(--neon-blue);
+  background: rgba(0,212,255,0.1);
+  box-shadow: 0 0 20px rgba(0,212,255,0.3);
+}
+.chip.active-male {
+  border-color: var(--neon-blue);
+  color: var(--neon-blue);
+  background: rgba(0,212,255,0.1);
+  box-shadow: 0 0 20px rgba(0,212,255,0.3);
+}
+.chip.active-female {
+  border-color: var(--neon-pink);
+  color: var(--neon-pink);
+  background: rgba(255,0,110,0.1);
+  box-shadow: 0 0 20px rgba(255,0,110,0.3);
+}
+
+/* ── RESULTS BAR ── */
+.results-bar {
+  max-width: 1200px;
+  margin: 0 auto 28px;
+  padding: 0 24px;
+  font-family: 'Orbitron', monospace;
+  font-size: 11px;
+  letter-spacing: 4px;
+  color: rgba(255,255,255,0.25);
+  text-transform: uppercase;
+  text-align: center;
+}
+.results-bar em { font-style: normal; color: var(--neon-green); }
+
+/* ── MOVIE GRID ── */
+.movie-grid {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px 100px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 18px;
+}
+
+/* ── MOVIE CARD ── */
+.movie-card {
+  background: rgba(6,6,6,0.92);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 2px;
+  overflow: hidden;
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+  display: block;
+  transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+  animation: cardIn 0.4s ease both;
+}
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.movie-card.male-card:hover {
+  border-color: rgba(0,212,255,0.5);
+  transform: translateY(-5px) scale(1.01);
+  box-shadow: 0 14px 40px rgba(0,0,0,0.9), 0 0 24px rgba(0,212,255,0.18);
+}
+.movie-card.female-card:hover {
+  border-color: rgba(255,0,110,0.5);
+  transform: translateY(-5px) scale(1.01);
+  box-shadow: 0 14px 40px rgba(0,0,0,0.9), 0 0 24px rgba(255,0,110,0.18);
+}
+
+.card-poster {
+  width: 100%;
+  aspect-ratio: 2/3;
+  object-fit: cover;
+  display: block;
+  background: #0d0d0d;
+}
+.card-poster-ph {
+  width: 100%;
+  aspect-ratio: 2/3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: linear-gradient(145deg, #0b0b0b, #141414);
+  font-family: 'Orbitron', monospace;
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: rgba(255,255,255,0.18);
+  text-align: center;
+  padding: 16px;
+}
+.card-poster-ph-icon { font-size: 32px; opacity: 0.25; }
+
+.card-body { padding: 12px 14px 14px; }
+.card-title {
+  font-family: 'Bebas Neue', cursive;
+  font-size: 19px;
+  letter-spacing: 1px;
+  line-height: 1.05;
+  margin-bottom: 5px;
+  color: #fff;
+}
+.card-meta {
+  font-family: 'Orbitron', monospace;
+  font-size: 9px;
+  color: rgba(255,255,255,0.28);
+  letter-spacing: 2px;
+  margin-bottom: 6px;
+}
+.card-genre { font-size: 12px; color: rgba(255,255,255,0.38); margin-bottom: 8px; }
+.card-badge {
+  display: inline-block;
+  font-family: 'Orbitron', monospace;
+  font-size: 9px;
+  letter-spacing: 1px;
+  padding: 3px 8px;
+  border: 1px solid;
+  border-radius: 2px;
+}
+.male-card .card-badge { border-color: var(--neon-blue); color: var(--neon-blue); }
+.female-card .card-badge { border-color: var(--neon-pink); color: var(--neon-pink); }
+
+/* ── EMPTY STATE ── */
+.empty-state {
+  grid-column: 1/-1;
+  text-align: center;
+  padding: 100px 20px;
+  font-family: 'Orbitron', monospace;
+  font-size: 12px;
+  letter-spacing: 4px;
+  color: rgba(255,255,255,0.18);
+}
+.empty-state .empty-icon { font-size: 56px; display: block; margin-bottom: 24px; }
+
+/* ── MOVIE PAGE ── */
+.movie-page {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 48px 24px 100px;
+}
+
+.movie-page-inner {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 48px;
+  align-items: start;
+}
+
+@media (max-width: 700px) {
+  .movie-page-inner { grid-template-columns: 1fr; }
+}
+
+.movie-page-poster {
+  width: 100%;
+  border-radius: 2px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.9);
+  display: block;
+  border: 1px solid rgba(255,255,255,0.08);
+}
+.movie-page-poster-ph {
+  width: 100%;
+  aspect-ratio: 2/3;
+  background: linear-gradient(145deg,#0c0c0c,#161616);
+  display: flex; align-items: center; justify-content: center;
+  flex-direction: column; gap: 16px;
+  font-family: 'Orbitron', monospace; font-size: 11px;
+  letter-spacing: 2px; color: rgba(255,255,255,0.18);
+  border: 1px solid rgba(255,255,255,0.07);
+  text-align: center; padding: 24px;
+  border-radius: 2px;
+}
+
+.movie-page-right { display: flex; flex-direction: column; gap: 22px; }
+
+.movie-page-title {
+  font-family: 'Bebas Neue', cursive;
+  font-size: clamp(40px, 6vw, 72px);
+  letter-spacing: 3px;
+  line-height: 1;
+}
+.movie-page-title.male-title { color: #fff; }
+.movie-page-title.female-title { color: #fff; }
+
+.movie-page-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.meta-tag {
+  font-family: 'Orbitron', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  padding: 5px 12px;
+  border: 1px solid rgba(255,255,255,0.18);
+  border-radius: 2px;
+  color: rgba(255,255,255,0.45);
+  text-transform: uppercase;
+}
+.meta-tag.accent-blue { border-color: var(--neon-blue); color: var(--neon-blue); }
+.meta-tag.accent-pink { border-color: var(--neon-pink); color: var(--neon-pink); }
+.meta-tag.accent-green { border-color: var(--neon-green); color: var(--neon-green); }
+.meta-tag.accent-orange { border-color: var(--neon-orange); color: var(--neon-orange); }
+
+.movie-page-desc {
+  font-size: 16px;
+  line-height: 1.85;
+  color: rgba(255,255,255,0.65);
+  font-weight: 300;
+}
+
+.movie-page-hook {
+  border-left: 3px solid var(--neon-blue);
+  padding: 14px 20px;
+  background: rgba(0,212,255,0.04);
+}
+.movie-page-hook.female-hook {
+  border-color: var(--neon-pink);
+  background: rgba(255,0,110,0.04);
+}
+
+.hook-label {
+  font-family: 'Orbitron', monospace;
+  font-size: 9px;
+  letter-spacing: 4px;
+  color: rgba(255,255,255,0.25);
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
+.hook-text {
+  font-family: 'Bebas Neue', cursive;
+  font-size: clamp(20px, 3vw, 28px);
+  letter-spacing: 1px;
+  line-height: 1.4;
+  color: rgba(255,255,255,0.92);
+}
+
+.movie-page-details {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.detail-item { display: flex; flex-direction: column; gap: 4px; }
+.detail-label {
+  font-family: 'Orbitron', monospace;
+  font-size: 9px;
+  letter-spacing: 3px;
+  color: rgba(255,255,255,0.22);
+  text-transform: uppercase;
+}
+.detail-value {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.75);
+}
+
+.imdb-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: 'Orbitron', monospace;
+  font-size: 11px;
+  letter-spacing: 3px;
+  padding: 14px 28px;
+  border: 1px solid var(--neon-blue);
+  color: var(--neon-blue);
+  text-decoration: none;
+  text-transform: uppercase;
+  transition: all 0.25s;
+  align-self: flex-start;
+  background: transparent;
+}
+.imdb-btn:hover {
+  background: rgba(0,212,255,0.12);
+  box-shadow: 0 0 28px rgba(0,212,255,0.35);
+}
+.imdb-btn.female-btn {
+  border-color: var(--neon-pink);
+  color: var(--neon-pink);
+}
+.imdb-btn.female-btn:hover {
+  background: rgba(255,0,110,0.12);
+  box-shadow: 0 0 28px rgba(255,0,110,0.35);
+}
+
+/* ── RELATED SECTION ── */
+.related-section {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 0 24px 80px;
+}
+.related-title {
+  font-family: 'Orbitron', monospace;
+  font-size: 11px;
+  letter-spacing: 5px;
+  color: rgba(255,255,255,0.25);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+}
+.related-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+}
